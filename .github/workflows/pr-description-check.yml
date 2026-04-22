@@ -1,0 +1,38 @@
+name: PR Description Check
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+jobs:
+  check-pr-description:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR description
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          echo "Checking PR description..."
+          
+          if [ -z "$PR_BODY" ]; then
+            echo "Error: PR description is empty!"
+            echo ""
+            echo "Please provide a meaningful description including:"
+            echo "  - What changes you made"
+            echo "  - Why you made these changes"
+            echo "  - How to test the changes"
+            echo "  - Any related issues (use 'Fixes #123' syntax)"
+            exit 1
+          fi
+          
+          BODY_LENGTH=${#PR_BODY}
+          if [ $BODY_LENGTH -lt 20 ]; then
+            echo "Error: PR description is too short ($BODY_LENGTH characters)"
+            echo "Please provide more details about your changes."
+            exit 1
+          fi
+          
+          echo "PR description looks good!"
+          echo "Title: $PR_TITLE"
+          echo "Description length: $BODY_LENGTH characters"

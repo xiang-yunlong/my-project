@@ -1,0 +1,43 @@
+name: Commit Message Check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-commit-messages:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check commit message format
+        run: |
+          echo "Checking commit messages..."
+          
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            COMMITS=$(git log origin/main..HEAD --pretty=format:"%s")
+          else
+            COMMITS=$(git log -1 --pretty=format:"%s")
+          fi
+          
+          echo "$COMMITS" | while read -r msg; do
+            if ! echo "$msg" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|build|ci|perf|revert)(\(.+\))?: .+"; then
+              echo "Invalid commit message format: $msg"
+              echo ""
+              echo "Expected format: type: description or type(scope): description"
+              echo "Valid types: feat, fix, docs, style, refactor, test, chore, build, ci, perf, revert"
+              echo ""
+              echo "Examples:"
+              echo "  fix: correct player movement direction"
+              echo "  feat(combat): add critical hit system"
+              echo "  docs: update installation instructions"
+              exit 1
+            fi
+          done
+          
+          echo "All commit messages are valid!"
