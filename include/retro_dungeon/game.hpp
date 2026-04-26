@@ -68,7 +68,10 @@ struct Player {
     Player(EntityId i, std::string n, Position p);
     
     bool isAlive() const { return health > 0; }
-    void takeDamage(int dmg) { health -= dmg; }
+    void takeDamage(int dmg) { 
+        health -= dmg; 
+        if(health<0)health=0;
+    }
     void heal(int amt);
     bool addItem(std::shared_ptr<Item> item);
     bool move(Direction dir);
@@ -145,6 +148,7 @@ public:
     void handleMovement(Direction dir);
     void handleCombat(Enemy& enemy);
     void nextLevel();
+    void showTitleScreen();
     
 private:
     GameState m_state;

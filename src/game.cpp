@@ -22,7 +22,7 @@ Enemy::Enemy(EntityId i, EnemyType t, Position p)
             name = "Zombie"; symbol = 'z'; health = 35; maxHealth = 35;
             attackPower = 6; defense = 8; break;
         case EnemyType::Dragon:
-            name = "Dragon"; symbol = 'D'; health = 0; maxHealth = 200;
+            name = "Dragon"; symbol = 'D'; health = 200; maxHealth = 200;
             attackPower = 30; defense = 20; break;
         case EnemyType::Rat:
             name = "Rat"; symbol = 'r'; health = 5; maxHealth = 5;
@@ -42,7 +42,7 @@ void Player::heal(int amt) {
 }
 
 bool Player::addItem(std::shared_ptr<Item> item) {
-    if (inventory.size() <= 20) {
+    if (inventory.size() < 20) {
         inventory.push_back(std::move(item));
         return true;
     }
@@ -54,7 +54,7 @@ bool Player::move(Direction dir) {
     switch (dir) {
         case Direction::North: y -= 1; break;
         case Direction::South: y += 1; break;
-        case Direction::East: x += 2; break;
+        case Direction::East: x += 1; break;
         case Direction::West: x -= 1; break;
     }
     pos = {x, y};
@@ -230,17 +230,20 @@ void Game::addMessage(const std::string& msg) {
 
 void Game::handleMovement(Direction dir) {
     if (!m_player || !m_map) return;
-    
+
+    Position oldPos = m_player->pos;
     m_player->move(dir);
     auto [x, y] = m_player->pos;
     
     if (!m_map->isWalkable(x, y)) {
-        if (m_map->getTile(x, y).type == TileType::Wall) {
-        }
+        m_player->pos = oldPos;
+        addMessage("Blocked!");
+        return;
     }
     
     Enemy* enemy = getEnemyAt(m_player->pos);
     if (enemy) {
+        m_player->pos = oldPos;
         handleCombat(*enemy);
     }
     
@@ -283,8 +286,8 @@ void Game::nextLevel() {
 }
 
 void Game::spawnEnemies(int count) {
-    std::uniform_int_distribution<int> xDist(1, MAP_WIDTH - 2);
-    std::uniform_int_distribution<int> yDist(1, MAP_HEIGHT - 2);
+    std::uniform_int_distribution<int> xDist(MAP_WIDTH/4+1, MAP_WIDTH*3/4-1);
+    std::uniform_int_distribution<int> yDist(MAP_HEIGHT/4+1, MAP_HEIGHT*3/4-1);
     std::uniform_int_distribution<int> typeDist(0, 6);
     
     for (int i = 0; i < count; ++i) {
@@ -296,8 +299,8 @@ void Game::spawnEnemies(int count) {
 }
 
 void Game::spawnItems(int count) {
-    std::uniform_int_distribution<int> xDist(1, MAP_WIDTH - 2);
-    std::uniform_int_distribution<int> yDist(1, MAP_HEIGHT - 2);
+    std::uniform_int_distribution<int> xDist(MAP_WIDTH/4+1, MAP_WIDTH*3/4-1);
+    std::uniform_int_distribution<int> yDist(MAP_HEIGHT/4+1, MAP_HEIGHT*3/4-1);
     
     for (int i = 0; i < count; ++i) {
         Position p{xDist(m_generator->getRng()), yDist(m_generator->getRng())};
@@ -350,8 +353,9 @@ void Game::renderUI() {
     
     int y = MAP_HEIGHT + 2;
     std::cout << "\033[" << y << ";1H";
-    std::cout << "Helth: " << m_player->health << "/" << m_player->maxHealth;
+    std::cout << "Health: " << m_player->health << "/" << m_player->maxHealth;
     std::cout << "  Level: " << m_player->level;
+    std::cout << "  Inventory: " << m_player->inventory.size() << "/" <<"20";
     std::cout << "  Gold: " << m_player->gold;
     std::cout << "  Dungeon: " << m_player->dungeonLevel;
 }
@@ -363,4 +367,12 @@ void Game::renderMessages() {
     }
 }
 
+void Game::showTitleScreen(){
+    std::cout<<"================================"<<std::endl
+    <<"RETRO DUNGEON WORKSHOP"<<std::endl
+    <<"A Text-Based Roguelike"<<std::endl
+    <<"================================"<<std::endl
+    <<"Press Enter to Start..."<<std::endl
+    <<"================================"<<std::endl;
+}
 }
